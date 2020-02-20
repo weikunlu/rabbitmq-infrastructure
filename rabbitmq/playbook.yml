@@ -1,0 +1,7 @@
+---
+- name: install
+  hosts: node1
+
+  roles:
+    - install-erlang
+    - install-rabbitmq

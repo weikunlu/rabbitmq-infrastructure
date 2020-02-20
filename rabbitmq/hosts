@@ -1,0 +1,13 @@
+[node1]
+rabbit-node1 ansible_ssh_host=52.14.183.96
+
+[workers]
+
+[all_group]
+rabbit-node1
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_user=ubuntu
+ansible_private_key_file=<path-to-ec2-key>.pem
+ansible_ssh_extra_args='-o StrictHostKeyChecking=no'

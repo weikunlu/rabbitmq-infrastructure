@@ -1,0 +1,90 @@
+---
+- name: Install prerequisites
+  apt:
+    name: ['curl', 'software-properties-common']
+    update_cache: yes
+    state: present
+  become: yes
+
+
+- name: "Add RabbitMQ repository pinning preferences"
+  template:
+    src: "{{ rabbitmq_deb_pinning_tpl }}"
+    dest: "/etc/apt/preferences.d/{{ rabbitmq_deb_pinning_tpl | basename | regex_replace('\\.j2$', '') }}"
+    force: true
+    backup: true
+  become: yes
+
+- name: Add RabbitMQ GPG key
+  apt_key:
+    url: https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+    state: present
+  become: yes
+
+# - name: Add RabbitMQ APT repository
+#   apt_repository:
+#     repo: 'deb http://www.rabbitmq.com/debian/ testing main'
+#     state: present
+#   become: yes
+
+- name: Add RabbitMQ APT repository
+  apt_repository:
+    repo: 'deb https://dl.bintray.com/rabbitmq/debian bionic main'
+    state: present
+  become: yes
+
+- name: "Update cache"
+  apt:
+    update_cache: true
+  changed_when: false
+  become: yes
+
+- name: Install RabbitMQ
+  apt:
+    name: rabbitmq-server
+  become: yes
+
+- name: enable rabbitmq plugins
+  rabbitmq_plugin:
+    names: rabbitmq_management,rabbitmq_prometheus
+    state: enabled
+  notify:
+  - restart rabbitmq
+  become: yes
+
+- name: add user
+  rabbitmq_user:
+    user: admin
+    password: '123456'
+    tags: administrator
+    vhost: /
+    configure_priv: .*
+    write_priv: .*
+    read_priv: .*
+    state: present
+  become: yes
+
+- name: Capturing Erlang Cookie On Master
+  command: "cat {{ rabbitmq_erlang_cookie_file }}"
+  become: true
+  register: "rabbitmq_erlang_cookie"
+  when: inventory_hostname == "rabbit-node1"
+
+- name: Setting Erlang Cookie Of Master on Non-Master
+  set_fact:
+    rabbitmq_erlang_cookie: "{{ hostvars['rabbit-node1']['rabbitmq_erlang_cookie']['stdout'] }}"
+  when: inventory_hostname != "rabbit-node1"
+
+- name: Copy erlang cookie
+  template:
+    src: erlang.cookie.j2
+    dest: "{{ rabbitmq_erlang_cookie_file }}"
+    owner: rabbitmq
+    group: rabbitmq
+    mode: 0400
+    # backing up in case the need to recover
+    backup: yes
+  become: true
+  when: inventory_hostname != "rabbit-node1"
+  notify:
+  - restart rabbitmq

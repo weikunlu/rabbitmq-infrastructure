@@ -1,0 +1,8 @@
+---
+erlang_series: 22
+
+erlang_deb_repo_url: https://dl.bintray.com/rabbitmq-erlang/debian
+erlang_deb_gpg_url: https://dl.bintray.com/rabbitmq/Keys/rabbitmq-release-signing-key.asc
+erlang_deb_repo_tpl: etc/apt/sources.list.d/rabbitmq_erlang.list.j2
+erlang_deb_pinning_tpl: etc/apt/preferences.d/erlang.j2
+erlang_series_deb_version: 1:22.2.1-1
